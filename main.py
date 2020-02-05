@@ -2,9 +2,17 @@ import time
 import sys
 import numpy as np
 import argparse
+import logging
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
+
+
+for key in logging.Logger.manager.loggerDict:
+   logging.getLogger(key).setLevel(logging.CRITICAL)
+
+logger = logging.getLogger(__name__)
 
 
 class GameOfLife:
@@ -12,6 +20,16 @@ class GameOfLife:
    def __init__(self, size=(100, 100)):
       self.width, self.height = size
       self.grid = self.init_grid(size)
+
+   @property
+   def indices(self):
+      values = getattr(self, '_indices', [])
+      if not values:
+         for x in range(self.width):
+               for y in range(self.height):
+                  values.append((x, y))
+         self._indices = values
+      return self._indices
 
    @staticmethod
    def init_grid(size):
@@ -38,8 +56,18 @@ class GameOfLife:
       Return number of cells in current grid around point that are 1
       """
       live_neighbours = 0
+      value = self.grid[point]
       for x, y in self.get_radius(*point):
+         # NOTE: Creates a "tordial array" by using modulus operations
+         # To illustrate -- 5 % 5 = 0 and -1 % 5 = -1 while {0, 1...4} % 5 = {0, 1...4}
+         # Arrays can already access the -1th position to wrap backwards but this enables
+         # us to reach the 0th position when the max is exceeded to wrap forward.
          live_neighbours += self.grid[x % self.width][y % self.height]
+
+         # NOTE: Short circuit the code here
+         # Finding more than 3 live neighbors causes no difference in cell life.
+         if live_neighbours > 3:
+            break
       return live_neighbours
 
    def step_generation(self):
@@ -48,8 +76,9 @@ class GameOfLife:
       update it based on the rules of life
       """
       new = self.grid.copy()
-      for index, value in np.ndenumerate(self.grid):
+      for index in self.indices:
          live = self.get_neighbors(index)
+         value = self.grid[index]
          if value == 0 and live == 3:
             new[index] = 1
          elif value == 1 and live != 2 and live != 3:
@@ -78,6 +107,8 @@ if(__name__ == "__main__"):
    parser.add_argument('-g', '--generations', type=int, default=50,
                        help='Maximum generation to run the game')
    args = parser.parse_args()
+
+   logger.setLevel(logging.INFO)
 
    size = (args.dimension, args.dimension)
    max_generations = args.generations
