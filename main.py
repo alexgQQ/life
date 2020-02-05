@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 class GameOfLife:
 
-   def __init__(self, size=(100, 100)):
+   def __init__(self, size=(100, 100), max_generations=50):
       self.width, self.height = size
       self.grid = self.init_grid(size)
+      self.max_generations = max_generations
 
    @property
    def indices(self):
@@ -85,6 +86,12 @@ class GameOfLife:
             new[index] = 0
       self.grid = new
 
+   def run(self):
+      generation = 0
+      while generation <= self.max_generations:
+         self.step_generation()
+         generation += 1
+
 
 def update(frame, game):
    game.step_generation()
@@ -112,7 +119,7 @@ if(__name__ == "__main__"):
 
    size = (args.dimension, args.dimension)
    max_generations = args.generations
-   game = GameOfLife(size=size)
+   game = GameOfLife(size=size, max_generations=max_generations)
 
    if args.show:
       figsize = (5, 5)
@@ -128,7 +135,4 @@ if(__name__ == "__main__"):
 
       sys.exit(0)
 
-   generation = 0
-   while generation <= max_generations:
-      game.step_generation()
-      generation += 1
+   game.run()
