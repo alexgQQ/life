@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from .core import GameOfLife
-from .pool import ThreadPoolGameOfLife, ProcessGameOfLife
+from .pool import ThreadPoolGameOfLife, ProcessGameOfLife, PoolGameOfLife
 
 
 # Keep config small so tests will run quickly
@@ -12,8 +12,19 @@ test_config = {
     'max_generations': 20,
 }
 
+runs_per_class = 10
 ground_truth_class = GameOfLife
-number_of_test_runs = 10
+classes_to_test = [
+    GameOfLife,
+    ThreadPoolGameOfLife,
+    ProcessGameOfLife,
+    PoolGameOfLife,
+]
+
+parameters = []
+for test_class in classes_to_test:
+    for _ in range(runs_per_class):
+        parameters.append(test_class)
 
 
 @pytest.fixture
@@ -29,47 +40,14 @@ def persistant_state():
     return start, end
 
 
-def handle_test(expected_states, test_class):
-    states = persistant_state
-    starting_state, expected_end = expected_states
+@pytest.mark.parametrize('test_class', parameters)
+def test_game_of_life(persistant_state, test_class):
+    """
+    Sanity test to make sure the game is consistent.
+    Given an initial state, and expected end state should be able to be reached.
+    """
+    starting_state, expected_end = persistant_state
     game = test_class(**test_config)
     game.grid = starting_state
     game.run()
-    return expected_end, game.grid
-
-
-@pytest.mark.parametrize('number', range(number_of_test_runs))
-def test_game_of_life(persistant_state, number):
-    """
-    Sanity test to make sure the game is consistent.
-    Given an initial state, and expected end state should be able to be reached.
-    """
-    test_class = GameOfLife
-    states = persistant_state
-    expected_end, resulting_end = handle_test(states, test_class)
-    np.testing.assert_array_equal(resulting_end, expected_end)
-
-
-@pytest.mark.parametrize('number', range(number_of_test_runs))
-def test_thread_game_of_life(persistant_state, number):
-    """
-    Sanity test to make sure the game is consistent.
-    Given an initial state, and expected end state should be able to be reached.
-    """
-    test_class = ThreadPoolGameOfLife
-    states = persistant_state
-    expected_end, resulting_end = handle_test(states, test_class)
-    np.testing.assert_array_equal(resulting_end, expected_end)
-
-
-@pytest.mark.skip('TODO: Figure out why this fails')
-@pytest.mark.parametrize('number', range(number_of_test_runs))
-def test_process_game_of_life(persistant_state, number):
-    """
-    Sanity test to make sure the game is consistent.
-    Given an initial state, and expected end state should be able to be reached.
-    """
-    test_class = ProcessGameOfLife
-    states = persistant_state
-    expected_end, resulting_end = handle_test(states, test_class)
-    np.testing.assert_array_equal(resulting_end, expected_end)
+    np.testing.assert_array_equal(game.grid, expected_end)
