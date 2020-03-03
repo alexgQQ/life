@@ -19,3 +19,5 @@ pipenv run python core.py --help
 ```sh
 pipenv run python core.py -s -w 50 --height 50 -g 50 -r
 ```
+
+![](life.gif)
